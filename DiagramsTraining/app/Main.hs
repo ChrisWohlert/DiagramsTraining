@@ -13,6 +13,6 @@ import Diagrams.TwoD.Size
 myCircle :: Diagram B
 myCircle = circle 3
 
-doubleCalcs = size2D $ (circle 3 :: D V2 Double)
+doubleCalcs = width $ (circle 3 :: D V2 Double)
 
 main = print doubleCalcs

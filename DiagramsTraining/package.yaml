@@ -25,6 +25,7 @@ dependencies:
 - diagrams-lib
 - diagrams-svg
 - diagrams-contrib
+- QuickCheck
 
 library:
   source-dirs: src

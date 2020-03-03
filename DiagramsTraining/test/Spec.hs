@@ -1,2 +1,12 @@
-main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+import Test.QuickCheck
+
+
+
+
+
+
+
+prop_revapp :: [Int] -> [Int] -> Bool
+prop_revapp xs ys = reverse (xs++ys) == reverse ys ++ reverse xs
+
+main = quickCheck prop_revapp
