@@ -16,13 +16,13 @@ import qualified Debug.Trace as D
 data Class = Class String deriving (Show)
 
 instance Packable Class where
-    packingDims c = (1, 2)
+    packingDims (Class c) = (3, fromIntegral $ length c)
 
 
 draw :: Class -> Diagram B
-draw c = rect 1 2
+draw c = let (x,y) = packingDims c in rect x y # alignT
 
-packedClass = pack (take 10 (repeat (Class "test")))
+packedClass = pack (take 10 (map Class (["test", "ds", "a", "dsa", "dwad", "dsa", "ds", "1"])))
 
 toDiagram = travelPacked (D.trace "drawing" draw) (|||) (===) (<>) (D.trace (show packedClass) packedClass)
 
