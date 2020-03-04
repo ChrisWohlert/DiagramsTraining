@@ -2,6 +2,9 @@ module Packer ( Packed
               , Packable 
               ) where
 
+import Data.Either
+import Data.List
+
 type East a = Packed a
 type South a = Packed a
 
@@ -12,16 +15,21 @@ data Packed a = Packed (Maybe (East a)) (Maybe (South a)) a | NoPack
 class Packable a where
     packingDims :: a -> (Double, Double)
 
+makePacked :: (Packable a) => a -> Packed a
+makePacked m = Packed Nothing Nothing m
 
 pack :: Packable a => [a] -> Packed a
-pack (p:ps) = undefined
+pack (p:ps) = pack' (makePacked p) (map makePacked ps)
 
-pack' root (p:nextP:ps) = 
+pack' (Packed east south m) (p:ps) = 
     let
-        e = packEast p nextP
-        s = packSouth p nextP
+        easts = rights $ map (packEast p) ps
+        souths = rights $ map (packSouth p) ps
+        newEast = head $ sortOn fst $ map (\ p -> (absoluteWidth p * absoluteHeight p, p)) $ map (\ e -> Packed (Just e) south m) easts
+        newSouth = head $ sortOn fst $ map (\ p -> (absoluteWidth p * absoluteHeight p, p)) $ map (\ s -> Packed east (Just s) m) souths
     in
-        
+        if fst newEast >= fst newSouth then Packed (Just $ snd newEast) south m else Packed east (Just $ snd newSouth) m
+
 
 packSouth :: Packed a -> Packed a -> Either CantPack (Packed a)
 packSouth (Packed east Nothing m) new = Right $ Packed east (Just new) m
