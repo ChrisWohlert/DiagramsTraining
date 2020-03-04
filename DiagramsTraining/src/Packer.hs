@@ -1,5 +1,7 @@
 module Packer ( Packed
-              , Packable 
+              , Packable(packingDims)
+              , pack
+              , travelPacked
               ) where
 
 import Data.Either
@@ -10,7 +12,7 @@ type South a = Packed a
 
 data CantPack = NoSpace | Occupied
 
-data Packed a = Packed (Maybe (East a)) (Maybe (South a)) a | NoPack
+data Packed a = Packed (Maybe (East a)) (Maybe (South a)) a | NoPack deriving (Show)
 
 class Packable a where
     packingDims :: a -> (Double, Double)
@@ -21,14 +23,18 @@ makePacked m = Packed Nothing Nothing m
 pack :: Packable a => [a] -> Packed a
 pack (p:ps) = pack' (makePacked p) (map makePacked ps)
 
+pack' p [] = p
 pack' (Packed east south m) (p:ps) = 
     let
         easts = rights $ map (packEast p) ps
         souths = rights $ map (packSouth p) ps
         newEast = head $ sortOn fst $ map (\ p -> (absoluteWidth p * absoluteHeight p, p)) $ map (\ e -> Packed (Just e) south m) easts
         newSouth = head $ sortOn fst $ map (\ p -> (absoluteWidth p * absoluteHeight p, p)) $ map (\ s -> Packed east (Just s) m) souths
+        goEast = (not (null easts) && (null souths)) || fst newEast <= fst newSouth
+        end = null (easts ++ souths)
     in
-        if fst newEast >= fst newSouth then Packed (Just $ snd newEast) south m else Packed east (Just $ snd newSouth) m
+        if end then (Packed east south m) else
+        pack' (if goEast then Packed (Just $ snd newEast) south m else Packed east (Just $ snd newSouth) m) ps
 
 
 packSouth :: Packed a -> Packed a -> Either CantPack (Packed a)
@@ -74,3 +80,10 @@ souths (NoPack) = []
 
 getPacked (Packed _ _ m) = Just m
 getPacked NoPack = Nothing
+
+travelPacked :: (a -> b) -> (b -> b -> b) -> (b -> b -> b) -> (b -> b -> b) -> Packed a -> b
+travelPacked f fe fs mo p@(Packed (Just e) (Just s) m) = mo (fe (f m) (travelPacked f fe fs mo e)) (fs (f m) (travelPacked f fe fs mo s))
+travelPacked f fe fs mo p@(Packed Nothing (Just s) m) = (fs (f m) (travelPacked f fe fs mo s))
+travelPacked f fe fs mo p@(Packed (Just e) Nothing m) = (fe (f m) (travelPacked f fe fs mo e))
+travelPacked f fe fs mo p@(Packed Nothing Nothing m) = f m
+travelPacked f fe fs mo p@(NoPack) = undefined
